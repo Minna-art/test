@@ -4,6 +4,34 @@ import apiService from "../lib/api";
 import { X, Eye, EyeOff, UserPlus, User, Lock, Mail, BookOpen } from "lucide-react";
 import GoogleLoginButton from "./GoogleLoginButton";
 
+// Custom wrapper for GoogleLoginButton in RegisterModal
+const GoogleLoginWrapper = ({ onClose }) => {
+  const originalLogin = useAuthStore((state) => state.login);
+  
+  // Override the login function to close modal after successful login
+  React.useEffect(() => {
+    const store = useAuthStore.getState();
+    const originalLoginFn = store.login;
+    
+    // Temporarily override login function
+    useAuthStore.setState({
+      login: (user, token) => {
+        originalLoginFn(user, token);
+        onClose(); // Close modal after successful Google login
+      }
+    });
+    
+    // Cleanup: restore original login function when component unmounts
+    return () => {
+      useAuthStore.setState({
+        login: originalLoginFn
+      });
+    };
+  }, [onClose]);
+  
+  return <GoogleLoginButton />;
+};
+
 const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     username: "",
@@ -96,12 +124,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Handle successful Google login
-  const handleGoogleSuccess = () => {
-    onClose(); // Close modal after successful Google login
-    alert("Đăng ký/Đăng nhập bằng Google thành công!");
   };
 
   if (!isOpen) return null;
@@ -312,8 +334,8 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
           </div>
 
           {/* Google Login Button - Styled wrapper */}
-          <div className="w-full bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] overflow-hidden">
-            <GoogleLoginButton onSuccess={handleGoogleSuccess} />
+          <div className="w-full bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] overflow-hidden flex items-center justify-center py-2">
+            <GoogleLoginWrapper onClose={onClose} />
           </div>
 
           {/* Switch to login */}
